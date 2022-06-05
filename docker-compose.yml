@@ -1,0 +1,47 @@
+version: "3.8"
+
+volumes:
+  db-store:
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ./infra/docker/php/Dockerfile
+    ports:
+      - ${WEB_PORT:-80}:80
+    volumes:
+      - ./backend:/work/backend
+    environment:
+      - database_default_DBDriver=MySQLi
+      - database_default_hostname=db
+      - database_default_port=${DB_PORT:-3306}
+      - database_default_database=${DB_NAME:-ci4}
+      - database_default_username=${DB_USER:-ci4}
+      - database_default_password=${DB_PASS:-ci4}
+
+  db:
+    build:
+      context: .
+      dockerfile: ./infra/docker/mysql/Dockerfile
+    ports:
+      - ${DB_PORT:-3306}:3306
+    volumes:
+      - db-store:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=${DB_NAME:-ci4}
+      - MYSQL_USER=${DB_USER:-ci4}
+      - MYSQL_PASSWORD=${DB_PASS:-ci4}
+      - MYSQL_ROOT_PASSWORD=${DB_PASS:-root}
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.0.4
+    links:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_PORT: ${DB_PORT:-3306}
+    ports:
+      - 81:80
+    volumes:
+      - db-store:/sessions
